@@ -1,0 +1,361 @@
+#!/usr/bin/env bash
+
+
+##
+## USER-CONFIGURABLE VARIABLES
+##
+
+#
+# assign the script verbosity level of 0 through 3 (representing silent through very verbose, respectivly)
+#
+SELF_OUTS_VERBOSITY="${VERBOSITY:-2}"
+
+#
+# assign the script debug state of 0 or 1 (representing false or true, respectivly)
+#
+SELF_OUTS_DEBUG="${DEBUG:-0}"
+
+
+##
+## INTERNAL VARIABLES
+##
+
+#
+# assign the script program organization context
+#
+SELF_PROG_ORGS='src-run'
+
+#
+# assign the script program name
+#
+SELF_PROG_NAME='get-my-zsh-env'
+
+#
+# assign the script program name
+#
+SELF_PROG_LINK='github.com/robfrawley/get-my-zsh-env'
+
+#
+# assign the script version (major)
+#
+SELF_VERS_MAJOR=0
+
+#
+# assign the script version (minor)
+#
+SELF_VERS_MINOR=5
+
+#
+# assign the script version (patch)
+#
+SELF_VERS_PATCH=0
+
+#
+# assign the script version (named)
+#
+SELF_VERS_NAMED='considered-academic-operative'
+
+#
+# assign the script version (patch)
+#
+SELF_VERS_ALL_CONCISE="${SELF_VERS_MAJOR}.${SELF_VERS_MINOR}.${SELF_VERS_PATCH}"
+
+#
+# assign the script version (patch)
+#
+SELF_VERS_ALL_VERBOSE="${SELF_VERS_MAJOR}.${SELF_VERS_MINOR}.${SELF_VERS_PATCH} <${SELF_VERS_NAMED}>"
+
+#
+# assign the script copyright license name
+#
+SELF_COPY_NAME='MIT License'
+
+#
+# assign the script copyright license link
+#
+SELF_COPY_LINK='rmf.mit-license.org'
+
+#
+# assign the script author name
+#
+SELF_AUTH_NAME='Rob Frawley 2nd'
+
+#
+# assign the script author email
+#
+SELF_AUTH_MAIL='rmf@src.run'
+
+
+##
+## FUNCTIONS
+##
+
+#
+# determine if verbosity state is gt very verbose
+#
+function is_v_gt_very_verbose() {
+  [[ ${SELF_OUTS_VERBOSITY} -ge 3 ]] && return 0 || return 1
+}
+
+#
+# determine if verbosity state is gt verbose
+#
+function is_v_ge_verbose() {
+  [[ ${SELF_OUTS_VERBOSITY} -ge 2 ]] && return 0 || return 1
+}
+
+#
+# determine if verbosity state is gt normal
+#
+function is_v_ge_normal() {
+  [[ ${SELF_OUTS_VERBOSITY} -ge 1 ]] && return 0 || return 1
+}
+
+#
+# determine if verbosity state is gt silent
+#
+function is_v_ge_silent() {
+  [[ ${SELF_OUTS_VERBOSITY} -ge 0 ]] && return 0 || return 1
+}
+
+#
+# determine if verbosity state is very verbose
+#
+function is_v_very_verbose() {
+  is_v_gt_very_verbose; return $?
+}
+
+#
+# determine if verbosity state is verbose
+#
+function is_v_verbose() {
+  [[ ${SELF_OUTS_VERBOSITY} -eq 2 ]] && return 0 || return 1
+}
+
+#
+# determine if verbosity state is normal
+#
+function is_v_normal() {
+  [[ ${SELF_OUTS_VERBOSITY} -eq 1 ]] && return 0 || return 1
+}
+
+#
+# determine if verbosity state is silent
+#
+function is_v_silent() {
+  [[ ${SELF_OUTS_VERBOSITY} -le 0 ]] && return 0 || return 1
+}
+
+#
+# output printf wrapper
+#
+function out() {
+  printf -- "${@}" 2> /dev/null
+}
+
+#
+# get max value
+#
+function max_integer() {
+  local m=0
+
+  for i in "${@}"; do
+    if [[ ${i} -gt ${m} ]]; then
+      m=${i}
+    fi
+  done
+
+  out "${m}"
+}
+
+#
+# get max string length
+#
+function max_str_len() {
+  local m=0
+  local l=0
+
+  for s in "${@}"; do
+    l=$(out '%s' "${s}" | wc -c 2> /dev/null)
+
+    if [[ ${l} -gt ${m} ]]; then
+      m=${l}
+    fi
+  done
+
+  out "${m}"
+}
+
+#
+# output newline(s)
+#
+function out_nl() {
+  local i="${1:-1}"
+
+  for i in $(seq 1 ${i}); do
+    out '\n'
+  done
+}
+
+#
+# output repeating string
+#
+function out_repeat() {
+  local s="${1}"
+  local i="${2:-1}"
+
+  for i in $(seq 1 ${i}); do
+    out '%s' "${s}"
+  done
+}
+
+#
+# output separator
+#
+function out_sep() {
+  local size="${1:-$(tput cols)}"
+  local char="${2:- }"
+
+  _out "$(out_repeat "${char}" "${size}")" '@style:reverse'
+  out_nl
+}
+
+#
+# setup the output environment
+#
+function out_setup() {
+  if [[ ${SELF_OUTS_DEBUG} -eq 1 ]]; then
+    SELF_OUTS_VERBOSITY=3
+  else
+    SELF_OUTS_DEBUG=0
+  fi
+}
+
+#
+# output boxed reverse text lines
+#
+function out_boxed_reverse() {
+  local pad_len="${1}"
+  local -a lines=("${@:2}")
+  local lines_max=$(
+    max_str_len "${lines[@]}"
+  )
+  local lines_len=$(( ${lines_max} + ( 2 * ${pad_len} ) ))
+
+  out_sep "${lines_len}"
+
+  for l in "${lines[@]}"; do
+    _out "$(
+      out \
+        '%s%s%s' \
+        "$(out_repeat ' ' ${pad_len})" \
+        "${l}" \
+        "$(out_repeat ' ' "$(( ${lines_len} - ${#l} - ${pad_len} ))")"
+    )" '@style:reverse'
+    out_nl
+  done
+
+  out_sep "${lines_len}"
+}
+
+#
+# get output script title section (name)
+#
+function out_title_section_name() {
+  out '@context : '
+
+  if is_v_verbose; then
+    out '%s/' "${SELF_PROG_ORGS}"
+  fi
+
+  out "${SELF_PROG_NAME}"
+
+  if is_v_verbose; then
+    out ' <%s>' "${SELF_PROG_LINK}"
+  fi
+}
+
+#
+# get output script title section (name)
+#
+function out_title_section_vers() {
+  out '@version : '
+
+  if is_v_verbose; then
+    out "${SELF_VERS_ALL_VERBOSE}"
+  else
+    out "${SELF_VERS_ALL_CONCISE}"
+  fi
+}
+
+#
+# get output script title section (name)
+#
+function out_title_section_copy() {
+  out '@license : %s' "${SELF_COPY_NAME}"
+
+  if is_v_verbose; then
+    out ' <%s>' "${SELF_COPY_LINK}"
+  fi
+}
+
+#
+# get output script title section (name)
+#
+function out_title_section_auth() {
+  out '@author  : %s' "${SELF_AUTH_NAME}"
+
+  if is_v_verbose; then
+    out ' <%s>' "${SELF_AUTH_MAIL}"
+  fi
+}
+
+#
+# output script title lines
+#
+function out_title() {
+  if is_v_silent; then
+    return
+  fi
+
+  out_nl
+
+  out_boxed_reverse \
+    2 \
+    "$(out_title_section_name)" \
+    "$(out_title_section_vers)" \
+    "$(out_title_section_auth)" \
+    "$(out_title_section_copy)"
+
+  out_nl
+}
+
+#
+# main program routine
+#
+function main() {
+  out_setup
+  out_title
+}
+
+
+##
+## SOURCE REQUIRED LIBRARIES
+##
+
+#
+# source bright library
+#
+
+source "$(readlink -e "$(
+  cd "$(dirname "$(readlink -e "${BASH_SOURCE[0]}" 2> /dev/null)" 2> /dev/null)" &> /dev/null \
+    && pwd 2> /dev/null
+)/../lib/bright-library/bright.bash")"
+
+
+##
+## EXECUTE MAIN SUBROUTINE
+##
+
+main "${@}"
+
